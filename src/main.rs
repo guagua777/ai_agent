@@ -25,7 +25,11 @@ async fn main() -> anyhow::Result<()> {
                 
     tracing::subscriber::set_global_default(subscriber)?;
 
-    let _response = chat_completion("gpt-3.5-turbo", Some("你是一个全能助手"), "中国的首都是哪里").await?;
+    let model = "deepseek-v4-flash";
 
+    let response = chat_completion(OpenAI_GPT_OSS, Some("你是一个全能助手"), "中国的首都是哪里").await?;
+
+    println!("response: {}", response);
+    
     Ok(())
 }

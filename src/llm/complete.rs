@@ -36,6 +36,10 @@ pub async fn chat_completion(model: &str, system: Option<&str>, prompt: &str) ->
 
     tracing::info!("response: {:#?}", response);
 
-    Ok("".to_string())
+    let content = response.choices.into_iter().next().and_then(|c|c.message.content)
+                         .ok_or_else(|| anyhow::anyhow!("no content in response"))?;
+
+    Ok(content)
+    // Ok("".into())
     
 }
