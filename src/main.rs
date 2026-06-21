@@ -1,13 +1,11 @@
+use ai_agent::llm::complete::chat_completion_structured;
 use anyhow::Ok;
 use tracing_subscriber::FmtSubscriber;
 use tracing::Level;
+use ai_agent::constant::NVIDIA_Nemotron_3;
+use ai_agent::constant::OpenAI_GPT_OSS;
 
-use crate::llm::complete::chat_completion;
-use crate::constant::NVIDIA_Nemotron_3;
-use crate::constant::OpenAI_GPT_OSS;
 
-mod llm;
-mod constant;
 
 
 
@@ -27,9 +25,11 @@ async fn main() -> anyhow::Result<()> {
 
     let model = "deepseek-v4-flash";
 
-    let response = chat_completion(OpenAI_GPT_OSS, Some("你是一个全能助手"), "中国的首都是哪里").await?;
+    let response = chat_completion_structured(model, 
+        Some("你是一个全能助手"), 
+        "我要去美加墨参加世界杯，如何安排？").await?;
 
-    println!("response: {}", response);
+    println!("response: {:#?}", response);
     
     Ok(())
 }

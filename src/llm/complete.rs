@@ -2,8 +2,13 @@ use anyhow::Ok;
 use async_openai::types::chat::ChatCompletionRequestSystemMessageArgs;
 use async_openai::types::chat::ChatCompletionRequestUserMessageArgs;
 use async_openai::types::chat::CreateChatCompletionRequestArgs;
+use crate::models::action_plan::ActionPlan;
+use async_openai::types::chat::ResponseFormat;
+use async_openai::types::chat::ResponseFormatJsonSchema;
 
-pub async fn chat_completion(model: &str, system: Option<&str>, prompt: &str) -> anyhow::Result<String>  {
+
+pub async fn chat_completion_structured(model: &str, system: Option<&str>, prompt: &str) 
+    -> anyhow::Result<ActionPlan>  {
     let client = async_openai::Client::new();
     let mut messages  = vec![];
 
@@ -24,10 +29,22 @@ pub async fn chat_completion(model: &str, system: Option<&str>, prompt: &str) ->
         .into()
     );
 
+    let schema = schemars::schema_for!(ActionPlan);
+    let schema_json = schema.as_value().clone();
+    let format_setting = ResponseFormat::JsonSchema {
+        json_schema: ResponseFormatJsonSchema {
+            description: Some("A step-by-step agent action plan with difficulty and time estimate".into()),
+            name: "action_plan".into(),
+            schema: schema_json,
+            strict: Some(true),
+        },
+    };
+
 
     let request = CreateChatCompletionRequestArgs::default()
             .model(model)
             .messages(messages)
+            .response_format(format_setting)
             .max_tokens(2048u32)
             .build()?;
 
@@ -36,10 +53,11 @@ pub async fn chat_completion(model: &str, system: Option<&str>, prompt: &str) ->
 
     tracing::info!("response: {:#?}", response);
 
-    let content = response.choices.into_iter().next().and_then(|c|c.message.content)
-                         .ok_or_else(|| anyhow::anyhow!("no content in response"))?;
+    let plan: ActionPlan = response.choices.into_iter().next().and_then(|c|c.message.content)
+                         .ok_or_else(|| anyhow::anyhow!("no content in response"))
+                         .and_then(|s| serde_json::from_str(&s).map_err(Into::into))?;
 
-    Ok(content)
+    Ok(plan)
     // Ok("".into())
     
 }
